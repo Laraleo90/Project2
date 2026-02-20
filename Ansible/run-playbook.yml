@@ -1,0 +1,51 @@
+---
+- name: Start containers on all instances
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure Docker is running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+# Frontend Server
+- name: Start frontend containers
+  hosts: frontend
+  become: yes
+  tasks:
+    - name: Start vote container
+      docker_container:
+        name: vote
+        state: started
+
+    - name: Start result container
+      docker_container:
+        name: result
+        state: started
+
+
+# Backend Server
+- name: Start backend container
+  hosts: backend
+  become: yes
+  tasks:
+    - name: Start worker container
+      docker_container:
+        name: worker
+        state: started
+        
+    - name: Start redis container
+      docker_container:
+        name: redis
+        state: started
+
+# DB Server
+- name: Start data containers
+  hosts: data
+  become: yes
+  tasks:
+    - name: Start postgres container
+      docker_container:
+        name: postgres
+        state: started

@@ -1,0 +1,25 @@
+# IPs
+redis_host: 10.0.2.74
+db_host: 10.0.2.206
+
+# Docker images
+voting_image: laraleo/project1:voting-appuv
+result_image: laraleo/project1:result-appuv
+worker_image: laraleo/project1:worker-appuv
+redis_image: redis:latest
+postgres_image: postgres:latest
+
+# Ports
+redis_port: "6379"
+redis_port_host: "6379"
+postgres_port: "5432"
+postgres_port_host: "5432"
+vote_port: "80"
+vote_port_host: "8080"
+result_port: "80"
+result_port_host: "8081"
+
+# Reference vault variables
+db_username: "{{ vault_db_username }}"
+db_password: "{{ vault_db_password }}"
+db_name: "{{ vault_db_name }}"

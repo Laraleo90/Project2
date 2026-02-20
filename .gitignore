@@ -1,0 +1,16 @@
+####### Terraform ######
+.terraform/
+*terraform.tfstate*
+*.ftvars
+
+###### Private keys ######
+*.pem
+project1_lara.pem
+
+###### Ansible Vault ######
+.vault_pass
+*.retry   
+
+##### macOS system files #####
+.DS_Store
+**/.DS_Store

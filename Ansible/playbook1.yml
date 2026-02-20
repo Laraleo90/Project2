@@ -1,0 +1,202 @@
+---
+- name: Ping all Servers
+  hosts: all
+  tags: check
+  tasks:
+    - name: Ping all servers to check connectivity
+      ansible.builtin.ping:
+
+- name: Install Docker CE on Ubuntu 20.04
+  hosts: all
+  become: yes
+  tags: setup
+  tasks:
+    - name: Install prerequisites
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: yes
+
+    - name: Create keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Add Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Remove old Docker source list if it exists
+      ansible.builtin.file:
+        path: /etc/apt/sources.list.d/docker.list
+        state: absent
+
+    - name: Add Docker repository
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/docker.list
+        content: |
+          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable
+
+    - name: Update apt cache after adding Docker repo
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install Docker and plugins
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Ensure docker group exists
+      ansible.builtin.group:
+        name: docker
+        state: present
+
+    - name: Add ubuntu user to docker group
+      ansible.builtin.user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+- name: Deploy Frontend Docker Images
+  hosts: frontend
+  become: yes
+  tags: deploy
+  tasks:
+    - name: Pull voting app image
+      community.docker.docker_image:
+        name: "{{ voting_image }}"
+        source: pull
+
+    - name: Pull result app image
+      community.docker.docker_image:
+        name: "{{ result_image }}"
+        source: pull
+
+- name: Deploy Backend Docker images
+  hosts: backend
+  become: yes
+  tags: deploy
+  tasks:
+    - name: Pull Redis image
+      community.docker.docker_image:
+        name: "{{ redis_image }}"
+        source: pull
+
+    - name: Pull worker app image
+      community.docker.docker_image:
+        name: "{{ worker_image }}" 
+        source: pull
+
+- name: Deploy database Docker image
+  hosts: db
+  become: yes
+  tags: deploy
+  tasks:
+    - name: Pull PostgreSQL image
+      community.docker.docker_image:
+        name: "{{ postgres_image }}" 
+        source: pull
+
+
+## Run the containers
+- name: Start container Redis
+  hosts: backend
+  become: yes
+  tags: run
+  tasks:
+    - name: Start Redis container
+      when: "'backend' in group_names"
+      community.docker.docker_container:
+        name: redis
+        image: "{{ redis_image }}"
+        published_ports:
+          - "{{ redis_port_host }}:{{ redis_port }}"
+        state: started
+        restart_policy: unless-stopped
+
+- name: Start PostgreSQL container
+  hosts: db
+  become: yes
+  tags: run
+  tasks:
+    - name: Start PostgreSQL container
+      community.docker.docker_container:
+        name: postgres
+        image: "{{ postgres_image }}" 
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "{{ postgres_port_host }}:{{ postgres_port }}"
+        env:
+          POSTGRES_USER: "{{ db_username }}" 
+          POSTGRES_PASSWORD: "{{ db_password }}" 
+          POSTGRES_DB: "{{ db_name }}" 
+  
+
+- name: Start Vote container
+  hosts: frontend
+  become: yes
+  tags: run
+  tasks:
+    - name: Run voting app container
+      community.docker.docker_container:
+        name: vote
+        image: "{{ voting_image }}" 
+        state: started
+        restart_policy: unless-stopped
+        ports:
+         - "{{ vote_port_host}}:{{ vote_port }}"
+        env:
+          REDIS_HOST: "{{ redis_host }}"
+
+
+- name: Start Worker container
+  hosts: backend
+  become: yes
+  tags: run
+  tasks:
+    - name: Run worker container
+      community.docker.docker_container:
+        name: worker
+        image: "{{ worker_image }}"
+        state: started
+        restart_policy: unless-stopped
+        network_mode: host 
+        env:
+          REDIS_HOST: "{{ redis_host }}"    
+          DB_HOST: "{{ db_host }}"          
+          DB_USERNAME: "{{ db_username }}"  
+          DB_PASSWORD: "{{ db_password }}"
+          DB_NAME: "{{ db_name }}"   
+
+- name: Start Result container
+  hosts: frontend
+  become: yes
+  tags: run
+  tasks:
+    - name: Run result app container
+      community.docker.docker_container:
+        name: result
+        image: "{{ result_image }}" 
+        state: started
+        restart_policy: unless-stopped
+        ports:
+        - "{{ result_port_host }}:{{ result_port }}"
+        env:
+          PG_HOST: "{{ db_host }}"          
+          PG_USER: "{{ db_username }}"      
+          PG_PASSWORD: "{{ db_password }}"  
+          PG_DATABASE: "{{ db_name }}"      
+          PORT: "{{ result_port }}"
+

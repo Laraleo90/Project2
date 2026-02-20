@@ -1,0 +1,5 @@
+key_pair_name = "project1_lara"
+availability_zone = "us-east-1a"
+aws_region       = "us-east-1"
+my_ip            = "78.42.136.146/32"
+instance_type    = "t2.micro"
