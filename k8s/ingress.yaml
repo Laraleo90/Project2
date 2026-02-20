@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: voting-app-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: vote.lara.local  # Fake domain 1
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: vote
+            port:
+              number: 80
+  - host: result.lara.local # Fake domain 2
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: result
+            port:
+              number: 80

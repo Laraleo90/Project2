@@ -1,0 +1,30 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: project2-lara
+  region: eu-central-1
+  version: "1.32"
+
+managedNodeGroups:
+  - name: node-lara
+    instanceType: t3.medium
+    desiredCapacity: 2
+    minSize: 1
+    maxSize: 3
+    volumeSize: 30         # Root EBS volume in GiB
+    volumeType: gp3         # gp3 is the current default
+    iam:
+      withAddonPolicies:
+        ebs: true
+    ssh:
+      allow: false          # Keep it locked down for labs
+
+addons:
+  - name: aws-ebs-csi-driver  # We'll need this for volumes!
+    version: latest
+  - name: eks-pod-identity-agent
+    version: latest
+
+addonsConfig:
+  autoApplyPodIdentityAssociations: true
