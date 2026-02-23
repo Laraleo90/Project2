@@ -30,8 +30,8 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build and push Vote image
-        if: steps.vote-check.outputs.changed == 'true'
+      - name: Build and push Vote image           
+        # if: steps.vote-check.outputs.changed == 'true'
         uses: docker/build-push-action@v4
         with:
           context: ./vote
@@ -52,7 +52,7 @@ jobs:
           fi
 
       - name: Build and push Result image
-        if: steps.result-check.outputs.changed == 'true'
+        #if: steps.result-check.outputs.changed == 'true'
         uses: docker/build-push-action@v4
         with:
           context: ./result
@@ -73,7 +73,7 @@ jobs:
           fi
 
       - name: Build and push Worker image
-        if: steps.worker-check.outputs.changed == 'true'
+        # if: steps.worker-check.outputs.changed == 'true'
         uses: docker/build-push-action@v4
         with:
           context: ./worker
