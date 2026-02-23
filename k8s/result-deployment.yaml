@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: result
-        image: laraleo/project1:result-appuv
+        image: laraleo/project2-result
         ports:
         - containerPort: 80
         env:

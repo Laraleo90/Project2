@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: worker
-        image: laraleo/project1:worker-appuv
+        image: laraleo/project2-worker
         env:
         - name: REDIS_HOST
           value: "redis"
