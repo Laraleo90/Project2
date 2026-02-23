@@ -20,6 +20,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          
       # 2. Build Vote image if vote/ folder changed
       - name: Check if vote changed
         id: vote-check
