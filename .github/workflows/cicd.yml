@@ -21,9 +21,6 @@ jobs:
         uses: actions/checkout@v3
 
       # 2. Build Vote image if vote/ folder changed
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-        
       - name: Check if vote changed
         id: vote-check
         run: |
@@ -42,7 +39,7 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/project2-vote:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/project2-vote:${{ github.sha }}
-          platforms: linux/amd64,linux/arm64
+          #platforms: linux/amd64,linux/arm64
 
       # 3. Build Result image if result/ folder changed
       - name: Check if result changed
@@ -63,7 +60,7 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/project2-result:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/project2-result:${{ github.sha }}
-          platforms: linux/amd64,linux/arm64
+          #platforms: linux/amd64,linux/arm64
 
       # 4. Build Worker image if worker/ folder changed
       - name: Check if worker changed
@@ -84,7 +81,7 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/project2-worker:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/project2-worker:${{ github.sha }}
-          platforms: linux/amd64,linux/arm64
+          #platforms: linux/amd64,linux/arm64
 
       # 5. Connect to AWS and Kubernetes
       - name: Setup AWS credentials
