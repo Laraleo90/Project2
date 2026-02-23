@@ -34,7 +34,7 @@ jobs:
         # if: steps.vote-check.outputs.changed == 'true'
         uses: docker/build-push-action@v4
         with:
-          context: .ironhack-project-1/vote
+          context: ./ironhack-project-1/vote
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/project2-vote:latest
@@ -55,7 +55,7 @@ jobs:
         #if: steps.result-check.outputs.changed == 'true'
         uses: docker/build-push-action@v4
         with:
-          context: .ironhack-project-1/result
+          context: ./ironhack-project-1/result
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/project2-result:latest
@@ -76,7 +76,7 @@ jobs:
         # if: steps.worker-check.outputs.changed == 'true'
         uses: docker/build-push-action@v4
         with:
-          context: .ironhack-project-1/worker
+          context: ./ironhack-project-1/worker
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/project2-worker:latest
