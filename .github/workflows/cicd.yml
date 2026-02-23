@@ -1,0 +1,155 @@
+name: Deploy to EKS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+  DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+  AWS_REGION: eu-central-1
+  CLUSTER_NAME: project2-laraa
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Get the code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Build Vote image if vote/ folder changed
+      - name: Check if vote changed
+        id: vote-check
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q "^vote/"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push Vote image
+        if: steps.vote-check.outputs.changed == 'true'
+        uses: docker/build-push-action@v4
+        with:
+          context: ./vote
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/project2-vote:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/project2-vote:${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
+
+      # 3. Build Result image if result/ folder changed
+      - name: Check if result changed
+        id: result-check
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q "^result/"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push Result image
+        if: steps.result-check.outputs.changed == 'true'
+        uses: docker/build-push-action@v4
+        with:
+          context: ./result
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/project2-result:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/project2-result:${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
+
+      # 4. Build Worker image if worker/ folder changed
+      - name: Check if worker changed
+        id: worker-check
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q "^worker/"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push Worker image
+        if: steps.worker-check.outputs.changed == 'true'
+        uses: docker/build-push-action@v4
+        with:
+          context: ./worker
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/project2-worker:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/project2-worker:${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
+
+      # 5. Connect to AWS and Kubernetes
+      - name: Setup AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Connect to EKS cluster
+        run: |
+          aws eks update-kubeconfig \
+            --name ${{ env.CLUSTER_NAME }} \
+            --region ${{ env.AWS_REGION }}
+
+      # 6. Create secrets
+      - name: Create database secret
+        run: |
+          kubectl create secret generic db-credentials \
+            --from-literal=username=${{ secrets.DB_USERNAME }} \
+            --from-literal=password=${{ secrets.DB_PASSWORD }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      # 7. Deploy everything
+      - name: Deploy storage
+        run: kubectl apply -f k8s/storage-class.yaml
+
+      - name: Deploy database
+        run: |
+          kubectl apply -f k8s/postgres-pvc.yaml
+          kubectl apply -f k8s/postgres-deployment.yaml
+          kubectl apply -f k8s/postgres-service.yaml
+          sleep 15
+
+      - name: Deploy redis
+        run: |
+          kubectl apply -f k8s/redis-deployment.yaml
+          kubectl apply -f k8s/redis-service.yaml
+
+      - name: Deploy vote app
+        if: steps.vote-check.outputs.changed == 'true'
+        run: |
+          sed -i 's|IMAGE_TAG|${{ secrets.DOCKER_HUB_USERNAME }}/project2-vote:${{ github.sha }}|g' k8s/vote-deployment.yaml
+          kubectl apply -f k8s/vote-deployment.yaml
+          kubectl apply -f k8s/vote-service.yaml
+
+      - name: Deploy result app
+        if: steps.result-check.outputs.changed == 'true'
+        run: |
+          sed -i 's|IMAGE_TAG|${{ secrets.DOCKER_HUB_USERNAME }}/project2-result:${{ github.sha }}|g' k8s/result-deployment.yaml
+          kubectl apply -f k8s/result-deployment.yaml
+          kubectl apply -f k8s/result-service.yaml
+
+      - name: Deploy worker app
+        if: steps.worker-check.outputs.changed == 'true'
+        run: |
+          sed -i 's|IMAGE_TAG|${{ secrets.DOCKER_HUB_USERNAME }}/project2-worker:${{ github.sha }}|g' k8s/worker-deployment.yaml
+          kubectl apply -f k8s/worker-deployment.yaml
+
+      - name: Deploy ingress
+        run: kubectl apply -f k8s/ingress-53.yaml
+
+      - name: Get access info
+        run: |
+          echo "✓ Deployment complete!"
+          echo ""
+          echo "Access your app at:"
+          echo "  Vote: http://vote.lara.domain.project2"
+          echo "  Result: http://result.lara.domain.project2"
+          echo ""
+          kubectl get pods
