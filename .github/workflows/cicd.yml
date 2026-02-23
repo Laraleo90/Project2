@@ -167,3 +167,4 @@ jobs:
           echo "  Result: http://result.lara.domain.project2"
           echo ""
           kubectl get pods
+
