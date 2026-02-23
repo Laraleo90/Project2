@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-  DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+  DOCKER_HUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKER_HUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
   AWS_REGION: eu-central-1
   CLUSTER_NAME: project2-laraa
 
@@ -37,8 +37,8 @@ jobs:
           context: ./vote
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/project2-vote:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/project2-vote:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/project2-vote:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/project2-vote:${{ github.sha }}
           platforms: linux/amd64,linux/arm64
 
       # 3. Build Result image if result/ folder changed
@@ -58,8 +58,8 @@ jobs:
           context: ./result
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/project2-result:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/project2-result:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/project2-result:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/project2-result:${{ github.sha }}
           platforms: linux/amd64,linux/arm64
 
       # 4. Build Worker image if worker/ folder changed
@@ -79,8 +79,8 @@ jobs:
           context: ./worker
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/project2-worker:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/project2-worker:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/project2-worker:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/project2-worker:${{ github.sha }}
           platforms: linux/amd64,linux/arm64
 
       # 5. Connect to AWS and Kubernetes
@@ -124,21 +124,21 @@ jobs:
       - name: Deploy vote app
         if: steps.vote-check.outputs.changed == 'true'
         run: |
-          sed -i 's|IMAGE_TAG|${{ secrets.DOCKER_HUB_USERNAME }}/project2-vote:${{ github.sha }}|g' k8s/vote-deployment.yaml
+          sed -i 's|IMAGE_TAG|${{ secrets.DOCKERHUB_USERNAME }}/project2-vote:${{ github.sha }}|g' k8s/vote-deployment.yaml
           kubectl apply -f k8s/vote-deployment.yaml
           kubectl apply -f k8s/vote-service.yaml
 
       - name: Deploy result app
         if: steps.result-check.outputs.changed == 'true'
         run: |
-          sed -i 's|IMAGE_TAG|${{ secrets.DOCKER_HUB_USERNAME }}/project2-result:${{ github.sha }}|g' k8s/result-deployment.yaml
+          sed -i 's|IMAGE_TAG|${{ secrets.DOCKERHUB_USERNAME }}/project2-result:${{ github.sha }}|g' k8s/result-deployment.yaml
           kubectl apply -f k8s/result-deployment.yaml
           kubectl apply -f k8s/result-service.yaml
 
       - name: Deploy worker app
         if: steps.worker-check.outputs.changed == 'true'
         run: |
-          sed -i 's|IMAGE_TAG|${{ secrets.DOCKER_HUB_USERNAME }}/project2-worker:${{ github.sha }}|g' k8s/worker-deployment.yaml
+          sed -i 's|IMAGE_TAG|${{ secrets.DOCKERHUB_USERNAME }}/project2-worker:${{ github.sha }}|g' k8s/worker-deployment.yaml
           kubectl apply -f k8s/worker-deployment.yaml
 
       - name: Deploy ingress
