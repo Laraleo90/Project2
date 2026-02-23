@@ -110,7 +110,7 @@ jobs:
           helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx \
             --create-namespace
-            
+
       # 6. Create secrets
       - name: Create database secret
         run: |
@@ -156,7 +156,7 @@ jobs:
           kubectl apply -f k8s/worker-deployment.yaml
 
       - name: Deploy ingress
-        run: kubectl apply -f k8s/ingress-53.yaml
+        run: kubectl apply -f k8s/ingress.yaml
 
       - name: Get access info
         run: |

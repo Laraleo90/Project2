@@ -7,7 +7,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: vote.lara.local. # Fake domain 1
+  - host: vote.lara.local # Fake domain 1
     http:
       paths:
       - path: /
