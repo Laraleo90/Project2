@@ -104,7 +104,7 @@ jobs:
             --from-literal=username=${{ secrets.DB_USERNAME }} \
             --from-literal=password=${{ secrets.DB_PASSWORD }} \
             --dry-run=client -o yaml | kubectl apply -f -
- 
+
       # 7. Deploy everything
       - name: Deploy storage
         run: kubectl apply -f k8s/storage-class.yaml
